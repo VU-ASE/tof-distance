@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"time"
 
@@ -11,131 +12,99 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// The main user space program
-// this program has all you need from roverlib: service identity, reading, writing and configuration
 func run(service roverlib.Service, configuration *roverlib.ServiceConfiguration) error {
-	//
-	// Get configuration values
-	//
-	if configuration == nil {
-		return fmt.Errorf("Configuration cannot be accessed")
-	}
 
 	//
-	// Access the service identity, who am I?
+	// Acquire distance output stream
 	//
-	log.Info().Msgf("Hello world, a new Go service '%s' was born at version %s", *service.Name, *service.Version)
+	distanceStream := service.GetWriteStream("distance")
 
 	//
-	// Access the service configuration, to use runtime parameters
+	// Read multiplex configuration value
 	//
-	tunableSpeed, err := configuration.GetFloatSafe("speed")
+	multiplex, err := configuration.GetFloatSafe("multiplex")
 	if err != nil {
 		return fmt.Errorf("Failed to get configuration: %v", err)
 	}
-	log.Info().Msgf("Fetched runtime configuration example tunable number: %f", tunableSpeed)
 
 	//
-	// Reading from an input, to get data from other services (see service.yaml to understand the input name)
+	// We are only interested in the channel if we use a multiplexer
 	//
-	readStream := service.GetReadStream("imaging", "path")
-	if readStream == nil {
-		return fmt.Errorf("Failed to get read stream")
+	channel := 0.0
+	if multiplex > 0.5 {
+		channel, err = configuration.GetFloatSafe("channel")
+		if err != nil {
+			return fmt.Errorf("Failed to get configuration: %v", err)
+		}
+	}
+	
+	//
+	// Read bus configuration value
+	//
+	bus, err := configuration.GetFloatSafe("bus")
+	if err != nil {
+		return fmt.Errorf("Failed to get configuration: %v", err)
 	}
 
 	//
-	// Writing to an output that other services can read (see service.yaml to understand the output name)
+	// Read fps configuration value
 	//
-	writeStream := service.GetWriteStream("decision")
-	if writeStream == nil {
-		return fmt.Errorf("Failed to create write stream 'decision'")
+	frameRate, err := configuration.GetFloatSafe("frame-rate")
+	if err != nil {
+		return fmt.Errorf("Failed to get configuration: %v", err)
 	}
 
-	for {
-		//
-		// Reading one message from the stream
-		//
-		data, err := readStream.Read()
-		if data == nil || err != nil {
-			return fmt.Errorf("Failed to read from 'imaging' service")
-		}
+	//
+	// Initialize our Time Of Flight sensor
+	//
+	sensor, err := Initialize(multiplex > 0.5, uint(math.Round(bus)), uint8(math.Round(channel)))
+	if err != nil {
+		log.Error().Msgf(err.Error())
+		return fmt.Errorf("Failed to initialize Time Of Flight sensor")
+	}
 
-		// When did the imaging service create this message?
-		createdAt := data.Timestamp
-		log.Info().Msgf("Recieved message with timestamp: %d", createdAt)
+	for{
+		distance, err := sensor.ReadDistance()
+		if err != nil {
+			log.Error().Msgf("Error reading...")
+			continue
+		} 
 
-		// Get the imaging data
-		imagingData := data.GetCameraOutput()
-		if imagingData == nil {
-			return fmt.Errorf("Message does not contain camera output. What did imaging do??")
-		}
-		log.Info().Msgf("Imaging service captured a %d by %d image", imagingData.Resolution.Width, imagingData.Resolution.Height)
-
-		// Print the X and Y coordinates of the middle point of the track that Imaging has detected
-		if len(imagingData.HorizontalScans) > 0 {
-			log.Info().Msgf("The left side of the track is at X: %d, and the right side of the track is at X: %d. Both are at Y: %d", imagingData.HorizontalScans[0].XLeft, imagingData.HorizontalScans[0].XRight, imagingData.HorizontalScans[0].Y)
-		} else {
-			log.Info().Msgf("imaging could didn't detect track edges. Is the Rover on the track?")
-		}
-
-		// This value holds the steering position that we want to pass to the servo (-1 = left, 0 = center, 1 = right)
-		steerPosition := float32(-0.5)
-
-		// Initialize the message that we want to send to the actuator
-		actuatorMsg := pb_outputs.SensorOutput{
-			Timestamp: uint64(time.Now().UnixMilli()), // milliseconds since epoch
-			Status:    0,                              // all is well
-			SensorId:  1,
-			SensorOutput: &pb_outputs.SensorOutput_ControllerOutput{
-				ControllerOutput: &pb_outputs.ControllerOutput{
-					SteeringAngle: steerPosition,
-					LeftThrottle:  float32(tunableSpeed),
-					RightThrottle: float32(tunableSpeed),
-					FanSpeed:      0,
-					FrontLights:   false,
+		err = distanceStream.Write(
+			&pb_outputs.SensorOutput{
+				SensorId:  2,
+				Status:    0,
+				Timestamp: uint64(time.Now().UnixMilli()),
+				SensorOutput: &pb_outputs.SensorOutput_DistanceOutput{
+					DistanceOutput: &pb_outputs.DistanceSensorOutput{
+						Distance: float32(distance) / 1000.0,
+					},
 				},
 			},
-		}
-
-		// Send the message to the actuator
-		err = writeStream.Write(&actuatorMsg)
+		)
 		if err != nil {
-			log.Warn().Err(err).Msg("Could not write to actuator")
+			log.Err(err).Msg("Failed to send distance output")
+			continue
 		}
 
-		//
-		// Now do something else fun, see if our "tunable_speed" is updated
-		//
-		curr := tunableSpeed
-
-		log.Info().Msg("Checking for tunable number update")
-
-		// We are not using the safe version here, because using locks is boring
-		// (this is perfectly fine if you are constantly polling the value)
-		// nb: this is not a blocking call, it will return the last known value
-		newVal, err := configuration.GetFloat("speed")
+		log.Info().Msgf("distance: %f m", float32(distance) / 1000.0)
+		frameRate, err = configuration.GetFloat("frame-rate")
 		if err != nil {
-			return fmt.Errorf("Failed to get updated tunable number: %v", err)
+			return fmt.Errorf("Failed to get configuration: %v", err)
+		}
+		if frameRate == 0 {
+			return fmt.Errorf("Frame rate can't be 0 (division by zero)")
 		}
 
-		if curr != newVal {
-			log.Info().Msgf("Tunable number updated: %f -> %f", curr, newVal)
-			curr = newVal
-		}
-		tunableSpeed = curr
+		time.Sleep(time.Second / time.Duration(frameRate))
+		
 	}
+	
 }
 
 // This function gets called when roverd wants to terminate the service
 func onTerminate(sig os.Signal) error {
 	log.Info().Str("signal", sig.String()).Msg("Terminating service")
-
-	//
-	// ...
-	// Any clean up logic here
-	// ...
-	//
-
 	return nil
 }
 

@@ -1,27 +1,32 @@
-name: SERVICE_NAME
-author: SERVICE_AUTHOR
-source: SERVICE_SOURCE
-version: SERVICE_VERSION
-description: A template service in Go
+name: tof-distance
+author: vu-ase
+source: https://github.com/VU-ASE/tof-distance
+version: 0.0.1
+description: A small service that gets the distance measured by a time of flight sensor and outputs it as a stream 
 
-# The alias "as: controller" allows this service to be recognized as "controller"
-# by other components (like the actuator), even if its actual name is different.
-# This allows us to change the name of the service without breaking the system.
-as: controller
 
 commands:
   build: make build
   run: ./bin/SERVICE_NAME
 
-inputs:
-  - service: imaging
-    streams:
-      - path
-outputs:
-  - decision
+inputs: []
+
+outputs: []
 
 configuration:
-  - name: speed
+  - name: frame-rate
     type: number
-    value: 0.2
+    value: 100
     tunable: true
+  - name: multiplex
+    type: number
+    value: 1 # 0 or 1
+    tunable: false 
+  - name: channel
+    type: number
+    value: 0 # unused if multiplex is off
+    tunable: false
+  - name: bus
+    type: number
+    value: 5 
+    tunable: false

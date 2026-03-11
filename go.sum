@@ -3,9 +3,14 @@ github.com/VU-ASE/rovercom/v2 v2.0.0/go.mod h1:ON3KbCs65HXqBfyWLTOggBrBvX/iU8YV3
 github.com/VU-ASE/roverlib-go/v2 v2.0.0 h1:5jzXskTixq1kCm35GgnyFczzXVZfHVyIiWYr4Wn1Bf8=
 github.com/VU-ASE/roverlib-go/v2 v2.0.0/go.mod h1:PeboTMTKUyjw6dx/hpTsdRqtpQ5IKhZhQsoB9Y0veT0=
 github.com/coreos/go-systemd/v22 v22.5.0/go.mod h1:Y58oyj3AT4RCenI/lSvhwexgC+NSVTIJ3seZv2GcEnc=
+github.com/corrupt/go-smbus v0.0.0-20161116095124-d22f26546b05 h1:Ckb292DqV5bYqBJp/Quc+tZNkaqHhtXdUtg4fkE/ags=
+github.com/corrupt/go-smbus v0.0.0-20161116095124-d22f26546b05/go.mod h1:uEv7CjFLJMMPbXylPmgImmFEbutSu5MsgYS1Jt5DG80=
 github.com/godbus/dbus/v5 v5.0.4/go.mod h1:xhWf0FNVPg57R7Z0UbKHbJfkEywrmjJnf7w5xrFpKfA=
 github.com/google/go-cmp v0.5.5 h1:Khx7svrCpmxxtHBq5j2mp/xVjsi8hQMfNLvJFAlrGgU=
 github.com/google/go-cmp v0.5.5/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
+github.com/google/go-cmp v0.6.0 h1:ofyhxvXcZhMsU5ulbFiLKl/XBFqE1GSq7atu8tAmTRI=
+github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 h1:El6M4kTTCOh6aBiKaUGG7oYTSPP8MxqL4YI3kZKwcP4=
+github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510/go.mod h1:pupxD2MaaD3pAXIBCelhxNneeOaAeabZDe5s4K6zSpQ=
 github.com/mattn/go-colorable v0.1.13 h1:fFA4WZxdEF4tXPZVKMLwD8oUnCTTo08duU7wxecdEvA=
 github.com/mattn/go-colorable v0.1.13/go.mod h1:7S9/ev0klgBDR4GtXTXX8a3vIGJpMovkB8vQcUbaXHg=
 github.com/mattn/go-isatty v0.0.16/go.mod h1:kYGgaQfpe5nmfYZH+SKPsOc2e4SrIfOl2e/yFXSvRLM=
@@ -27,3 +32,9 @@ golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543 h1:E7g+9GITq07hpfrRu66IV
 golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
 google.golang.org/protobuf v1.34.2 h1:6xV6lTsCfpGD21XK49h7MhtcApnLqkfYgPcdHftf6hg=
 google.golang.org/protobuf v1.34.2/go.mod h1:qYOHts0dSfpeUzUFpOMr/WGzszTmLH+DiWniOlNbLDw=
+periph.io/x/periph v2.3.0+incompatible h1:46UCFAYUH686Xu+npK+V5eptjhs5b+Vx5oWwPK81wm0=
+periph.io/x/periph v2.3.0+incompatible/go.mod h1:EWr+FCIU2dBWz5/wSWeiIUJTriYv9v2j2ENBmgYyy7Y=
+periph.io/x/periph v3.7.0+incompatible h1:AmDn8VldVNKpKjlDB9PX9ZlWINLMvxgc3kJT3IgZbiM=
+periph.io/x/periph v3.7.0+incompatible/go.mod h1:EWr+FCIU2dBWz5/wSWeiIUJTriYv9v2j2ENBmgYyy7Y=
+tinygo.org/x/drivers v0.34.0 h1:lw8ePJeUSn9oICKBvQXHC9TIE+J00OfXfkGTrpXM9Iw=
+tinygo.org/x/drivers v0.34.0/go.mod h1:ZdErNrApSABdVXjA1RejD67R8SNRI6RKVfYgQDZtKtk=
