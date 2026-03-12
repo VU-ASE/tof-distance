@@ -13,31 +13,25 @@ import (
 )
 
 func run(service roverlib.Service, configuration *roverlib.ServiceConfiguration) error {
-
 	//
 	// Acquire distance output stream
 	//
-	distanceStream := service.GetWriteStream("distance")
+	distanceStream1 := service.GetWriteStream("distance-1")
+	distanceStream2 := service.GetWriteStream("distance-2")
 
 	//
-	// Read multiplex configuration value
+	// Read both channel configuration values
 	//
-	multiplex, err := configuration.GetFloatSafe("multiplex")
+	channel1, err := configuration.GetFloatSafe("channel-1")
+	if err != nil {
+		return fmt.Errorf("Failed to get configuration: %v", err)
+	}
+	
+	channel2, err := configuration.GetFloatSafe("channel-2")
 	if err != nil {
 		return fmt.Errorf("Failed to get configuration: %v", err)
 	}
 
-	//
-	// We are only interested in the channel if we use a multiplexer
-	//
-	channel := 0.0
-	if multiplex > 0.5 {
-		channel, err = configuration.GetFloatSafe("channel")
-		if err != nil {
-			return fmt.Errorf("Failed to get configuration: %v", err)
-		}
-	}
-	
 	//
 	// Read bus configuration value
 	//
@@ -55,39 +49,74 @@ func run(service roverlib.Service, configuration *roverlib.ServiceConfiguration)
 	}
 
 	//
-	// Initialize our Time Of Flight sensor
+	// Initialize our Time Of Flight sensors
 	//
-	sensor, err := Initialize(multiplex > 0.5, uint(math.Round(bus)), uint8(math.Round(channel)))
+	sensor1, err := Initialize(uint(math.Round(bus)), uint8(math.Round(channel1)))
+	if err != nil {
+		log.Error().Msgf(err.Error())
+		return fmt.Errorf("Failed to initialize Time Of Flight sensor")
+	}
+
+	sensor2, err := Initialize(uint(math.Round(bus)), uint8(math.Round(channel2)))
 	if err != nil {
 		log.Error().Msgf(err.Error())
 		return fmt.Errorf("Failed to initialize Time Of Flight sensor")
 	}
 
 	for{
-		distance, err := sensor.ReadDistance()
+		//
+		// Read sensor 1
+		//
+		distance1, err := sensor1.ReadDistance()
 		if err != nil {
-			log.Error().Msgf("Error reading...")
-			continue
+			log.Error().Msgf("Sensor 1 failed to read distance: %v", err)
 		} 
 
-		err = distanceStream.Write(
+		err = distanceStream1.Write(
+			&pb_outputs.SensorOutput{
+				SensorId:  1,
+				Status:    0,
+				Timestamp: uint64(time.Now().UnixMilli()),
+				SensorOutput: &pb_outputs.SensorOutput_DistanceOutput{
+					DistanceOutput: &pb_outputs.DistanceSensorOutput{
+						Distance: float32(distance1) / 1000.0,
+					},
+				},
+			},
+		)
+		if err != nil {
+			return fmt.Errorf("Failed to send distance output: %v", err)
+		}
+
+		log.Info().Msgf("Sensor 1 distance: %f m", float32(distance1) / 1000.0)
+
+		//
+		// Read sensor 2
+		//
+		distance2, err := sensor2.ReadDistance()
+		if err != nil {
+			log.Error().Msgf("Sensor 2 failed to read distance: %v", err)
+		}
+
+		err = distanceStream2.Write(
 			&pb_outputs.SensorOutput{
 				SensorId:  2,
 				Status:    0,
 				Timestamp: uint64(time.Now().UnixMilli()),
 				SensorOutput: &pb_outputs.SensorOutput_DistanceOutput{
 					DistanceOutput: &pb_outputs.DistanceSensorOutput{
-						Distance: float32(distance) / 1000.0,
+						Distance: float32(distance2) / 1000.0,
 					},
 				},
 			},
 		)
 		if err != nil {
-			log.Err(err).Msg("Failed to send distance output")
-			continue
+			return fmt.Errorf("Failed to send distance output: %v", err)
 		}
 
-		log.Info().Msgf("distance: %f m", float32(distance) / 1000.0)
+		log.Info().Msgf("Sensor 2 distance: %f m", float32(distance2) / 1000.0)
+
+
 		frameRate, err = configuration.GetFloat("frame-rate")
 		if err != nil {
 			return fmt.Errorf("Failed to get configuration: %v", err)
@@ -102,14 +131,11 @@ func run(service roverlib.Service, configuration *roverlib.ServiceConfiguration)
 	
 }
 
-// This function gets called when roverd wants to terminate the service
 func onTerminate(sig os.Signal) error {
 	log.Info().Str("signal", sig.String()).Msg("Terminating service")
 	return nil
 }
 
-// This is just a wrapper to run the user program
-// it is not recommended to put any other logic here
 func main() {
 	roverlib.Run(run, onTerminate)
 }

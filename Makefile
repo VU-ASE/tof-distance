@@ -2,7 +2,7 @@
 .PHONY: build start clean test
 
 BUILD_DIR=bin/
-BINARY_NAME=SERVICE_NAME
+BINARY_NAME=tof
 
 lint:
 	@echo "Lint check..."
