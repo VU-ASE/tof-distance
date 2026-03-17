@@ -11,18 +11,20 @@ commands:
 
 inputs: []
 
-outputs: []
+outputs: 
+  - distance-first
+  - distance-second
 
 configuration:
   - name: frame-rate
     type: number
     value: 100
     tunable: true
-  - name: channel-1
+  - name: first-channel
     type: number
     value: 0 # the value correspond to how the sensor is physically wired to the multiplexer
     tunable: false
-  - name: channel-2
+  - name: second-channel
     type: number
     value: 1 # the value correspond to how the sensor is physically wired to the multiplexer
     tunable: false

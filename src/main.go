@@ -16,18 +16,18 @@ func run(service roverlib.Service, configuration *roverlib.ServiceConfiguration)
 	//
 	// Acquire distance output stream
 	//
-	distanceStream1 := service.GetWriteStream("distance-1")
-	distanceStream2 := service.GetWriteStream("distance-2")
+	distanceStream1 := service.GetWriteStream("distance-first")
+	distanceStream2 := service.GetWriteStream("distance-second")
 
 	//
 	// Read both channel configuration values
 	//
-	channel1, err := configuration.GetFloatSafe("channel-1")
+	channel1, err := configuration.GetFloatSafe("first-channel")
 	if err != nil {
 		return fmt.Errorf("Failed to get configuration: %v", err)
 	}
 	
-	channel2, err := configuration.GetFloatSafe("channel-2")
+	channel2, err := configuration.GetFloatSafe("second-channel")
 	if err != nil {
 		return fmt.Errorf("Failed to get configuration: %v", err)
 	}
