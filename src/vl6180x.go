@@ -100,7 +100,7 @@ func (v *VL6180X) ReadDistance(channel uint8) (int, error) {
 }
 
 // Initialize the sensor, depending on whether we are using a multiplexer
-func Initialize(multiplex bool, bus uint, channels [2]uint8) (*VL6180X, error) {
+func Initialize(bus uint, channels [2]uint8) (*VL6180X, error) {
 	sensorBus, err := smbus.New(bus, VL6180X_ADDR)
 	if err != nil {
 		return nil, fmt.Errorf("open sensor bus: %w", err)
@@ -113,17 +113,17 @@ func Initialize(multiplex bool, bus uint, channels [2]uint8) (*VL6180X, error) {
 		muxBus:   nil,
 	}
 
-	if multiplex {
-		muxBus, err := smbus.New(bus, MUX_ADDR)
-		if err != nil {
-			return nil, fmt.Errorf("open mux bus: %w", err)
-		}
-		vl.muxBus = muxBus
-
-		if err := vl.selectChannel(channels[0]); err != nil {
-			return nil, fmt.Errorf("selectChannel during init: %w", err)
-		}
+	
+	muxBus, err := smbus.New(bus, MUX_ADDR)
+	if err != nil {
+		return nil, fmt.Errorf("open mux bus: %w", err)
 	}
+	vl.muxBus = muxBus
+
+	if err := vl.selectChannel(channels[0]); err != nil {
+		return nil, fmt.Errorf("selectChannel during init: %w", err)
+	}
+	
 
 	reset, err := vl.readReg(vlRegSystemFreshOutReset)
 	if err != nil {
