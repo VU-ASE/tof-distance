@@ -13,7 +13,6 @@ import (
 )
 
 func run(service roverlib.Service, configuration *roverlib.ServiceConfiguration) error {
-
 	//
 	// Acquire distance output streams
 	//
@@ -31,6 +30,11 @@ func run(service roverlib.Service, configuration *roverlib.ServiceConfiguration)
 	// }
 	
 	
+	channel2, err := configuration.GetFloatSafe("second-channel")
+	if err != nil {
+		return fmt.Errorf("Failed to get configuration: %v", err)
+	}
+
 	//
 	// Read bus configuration value
 	//
@@ -48,7 +52,7 @@ func run(service roverlib.Service, configuration *roverlib.ServiceConfiguration)
 	}
 
 	//
-	// Initialize our Time Of Flight sensor
+	// Initialize our Time Of Flight sensors
 	//
 	sensor, err := Initialize(uint(math.Round(bus)), [2]uint8{uint8(math.Round(channelOne)), uint8(math.Round(channelOne))})
 	if err != nil {
@@ -114,14 +118,11 @@ func run(service roverlib.Service, configuration *roverlib.ServiceConfiguration)
 	
 }
 
-// This function gets called when roverd wants to terminate the service
 func onTerminate(sig os.Signal) error {
 	log.Info().Str("signal", sig.String()).Msg("Terminating service")
 	return nil
 }
 
-// This is just a wrapper to run the user program
-// it is not recommended to put any other logic here
 func main() {
 	roverlib.Run(run, onTerminate)
 }

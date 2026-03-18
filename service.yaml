@@ -7,7 +7,7 @@ description: A small service that gets the distance measured by a time of flight
 
 commands:
   build: make build
-  run: ./bin/SERVICE_NAME
+  run: ./bin/tof
 
 inputs: []
 
@@ -30,5 +30,5 @@ configuration:
   #   tunable: false
   - name: bus
     type: number
-    value: 5 
+    value: 5 # the rover's i2c bus number (it has two buses, 5 and 3)
     tunable: false
