@@ -12,7 +12,7 @@ commands:
 inputs: []
 
 outputs:
-#  - distance-one
+  - distance-one
 # - distance-two
 
 configuration:
