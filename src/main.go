@@ -14,18 +14,21 @@ import (
 
 func run(service roverlib.Service, configuration *roverlib.ServiceConfiguration) error {
 	//
-	// Acquire distance output stream
+	// Acquire distance output streams
 	//
-	distanceStream1 := service.GetWriteStream("distance-first")
-	distanceStream2 := service.GetWriteStream("distance-second")
+	distanceStreamOne := service.GetWriteStream("distance-one")
+	// distanceStreamTwo := service.GetWriteStream("distance-two")
 
-	//
-	// Read both channel configuration values
-	//
-	channel1, err := configuration.GetFloatSafe("first-channel")
+	channelOne, err := configuration.GetFloatSafe("channel-one")
 	if err != nil {
 		return fmt.Errorf("Failed to get configuration: %v", err)
 	}
+
+	// channelTwo, err = configuration.GetFloatSafe("channel-two")
+	// if err != nil {
+	// 	return fmt.Errorf("Failed to get configuration: %v", err)
+	// }
+	
 	
 	channel2, err := configuration.GetFloatSafe("second-channel")
 	if err != nil {
@@ -51,71 +54,55 @@ func run(service roverlib.Service, configuration *roverlib.ServiceConfiguration)
 	//
 	// Initialize our Time Of Flight sensors
 	//
-	sensor1, err := Initialize(uint(math.Round(bus)), uint8(math.Round(channel1)))
-	if err != nil {
-		log.Error().Msgf(err.Error())
-		return fmt.Errorf("Failed to initialize Time Of Flight sensor")
-	}
-
-	sensor2, err := Initialize(uint(math.Round(bus)), uint8(math.Round(channel2)))
+	sensor, err := Initialize(uint(math.Round(bus)), [2]uint8{uint8(math.Round(channelOne)), uint8(math.Round(channelOne))})
 	if err != nil {
 		log.Error().Msgf(err.Error())
 		return fmt.Errorf("Failed to initialize Time Of Flight sensor")
 	}
 
 	for{
-		//
-		// Read sensor 1
-		//
-		distance1, err := sensor1.ReadDistance()
+		distanceOne, err := sensor.ReadDistance(0)
 		if err != nil {
-			log.Error().Msgf("Sensor 1 failed to read distance: %v", err)
+			log.Error().Msgf("Error reading...%v", err)
+			continue
 		} 
-
-		err = distanceStream1.Write(
-			&pb_outputs.SensorOutput{
-				SensorId:  1,
-				Status:    0,
-				Timestamp: uint64(time.Now().UnixMilli()),
-				SensorOutput: &pb_outputs.SensorOutput_DistanceOutput{
-					DistanceOutput: &pb_outputs.DistanceSensorOutput{
-						Distance: float32(distance1) / 1000.0,
-					},
-				},
-			},
-		)
-		if err != nil {
-			return fmt.Errorf("Failed to send distance output: %v", err)
-		}
-
-		log.Info().Msgf("Sensor 1 distance: %f m", float32(distance1) / 1000.0)
-
-		//
-		// Read sensor 2
-		//
-		distance2, err := sensor2.ReadDistance()
-		if err != nil {
-			log.Error().Msgf("Sensor 2 failed to read distance: %v", err)
-		}
-
-		err = distanceStream2.Write(
+		time.Sleep(time.Millisecond * 5)
+		// distanceTwo, err := sensor.ReadDistance(1)
+		// if err != nil {
+		// 	log.Error().Msgf("Error reading sensor...%v", err)
+		// 	continue
+		// } 
+		err = distanceStreamOne.Write(
 			&pb_outputs.SensorOutput{
 				SensorId:  2,
 				Status:    0,
 				Timestamp: uint64(time.Now().UnixMilli()),
 				SensorOutput: &pb_outputs.SensorOutput_DistanceOutput{
 					DistanceOutput: &pb_outputs.DistanceSensorOutput{
-						Distance: float32(distance2) / 1000.0,
+						Distance: float32(distanceOne) / 1000.0,
 					},
 				},
 			},
 		)
-		if err != nil {
-			return fmt.Errorf("Failed to send distance output: %v", err)
+		// errTwo := distanceStreamTwo.Write(
+		// 	&pb_outputs.SensorOutput{
+		// 		SensorId:  2,
+		// 		Status:    0,
+		// 		Timestamp: uint64(time.Now().UnixMilli()),
+		// 		SensorOutput: &pb_outputs.SensorOutput_DistanceOutput{
+		// 			DistanceOutput: &pb_outputs.DistanceSensorOutput{
+		// 				Distance: float32(distanceTwo) / 1000.0,
+		// 			},
+		// 		},
+		// 	},
+		// )
+		if err != nil{
+			log.Err(err).Msg("Failed to send distance output")
+			continue
 		}
 
-		log.Info().Msgf("Sensor 2 distance: %f m", float32(distance2) / 1000.0)
-
+		log.Info().Msgf("distance sensor one: %f m", float32(distanceOne) / 1000.0)
+		//log.Info().Msgf("distance sensor two: %f m", float32(distanceTwo) / 1000.0)
 
 		frameRate, err = configuration.GetFloat("frame-rate")
 		if err != nil {

@@ -12,14 +12,14 @@ const vlRegResultRangeVal      = 0x0062
 const vlRegResultIntStatus     = 0x004F
 const vlRegSystemIntClear      = 0x0015
 
-const MUX_ADDR = 0x70 
-const VL6180X_ADDR  = 0x29 
+const MUX_ADDR = 0x70
+const VL6180X_ADDR  = 0x29
 
 type VL6180X struct {
-	bus     *smbus.SMBus
-	muxBus  *smbus.SMBus
-	address uint8
-	channel uint8
+	bus      *smbus.SMBus
+	muxBus   *smbus.SMBus
+	address  uint8
+	channels [2]uint8
 }
 
 // Write to 16bit register
@@ -40,9 +40,9 @@ func (v *VL6180X) readReg(reg uint16) (uint8, error) {
 	return buf[0], nil
 }
 
-// Toggle to the user specified channel (in case of using a multiplexer)
-func (v *VL6180X) selectChannel() error {
-	return v.muxBus.Write_byte(1<<v.channel)
+// Toggle to the specified channel (in case of using a multiplexer)
+func (v *VL6180X) selectChannel(channel uint8) error {
+	return v.muxBus.Write_byte(1 << channel)
 }
 
 // Initialize registers on startup
@@ -66,11 +66,12 @@ func (v *VL6180X) initRegisters() error {
 	return v.writeReg(vlRegSystemFreshOutReset, 0x00)
 }
 
-// Read in the distance, at this stage in mm
-func (v *VL6180X) ReadDistance() (int, error) {
-	// This selects the channel to the correct sensor if using a multiplexer at each read, otherwise it just re-selects the same channel which is harmless
-	if err := v.selectChannel(); err != nil {
-		return 0, fmt.Errorf("select channel: %w", err)
+// Read in the distance for the given channel index (0 or 1)
+func (v *VL6180X) ReadDistance(channel uint8) (int, error) {
+	if v.muxBus != nil {
+		if err := v.selectChannel(v.channels[channel]); err != nil {
+			return 0, fmt.Errorf("selecting channel: %w", err)
+		}
 	}
 
 	if err := v.writeReg(vlRegSysRangeStart, 0x01); err != nil {
@@ -99,27 +100,30 @@ func (v *VL6180X) ReadDistance() (int, error) {
 }
 
 // Initialize the sensor, depending on whether we are using a multiplexer
-func Initialize(bus uint, channel uint8) (*VL6180X, error) {
+func Initialize(bus uint, channels [2]uint8) (*VL6180X, error) {
 	sensorBus, err := smbus.New(bus, VL6180X_ADDR)
 	if err != nil {
 		return nil, fmt.Errorf("open sensor bus: %w", err)
 	}
 
+	vl := &VL6180X{
+		bus:      sensorBus,
+		address:  VL6180X_ADDR,
+		channels: channels,
+		muxBus:   nil,
+	}
+
+	
 	muxBus, err := smbus.New(bus, MUX_ADDR)
 	if err != nil {
 		return nil, fmt.Errorf("open mux bus: %w", err)
 	}
+	vl.muxBus = muxBus
 
-	vl := &VL6180X{
-		bus:     sensorBus,
-		address: VL6180X_ADDR,
-		channel: channel,
-		muxBus:  muxBus,
-	}
-
-	if err := vl.selectChannel(); err != nil {
+	if err := vl.selectChannel(channels[0]); err != nil {
 		return nil, fmt.Errorf("selectChannel during init: %w", err)
 	}
+	
 
 	reset, err := vl.readReg(vlRegSystemFreshOutReset)
 	if err != nil {
