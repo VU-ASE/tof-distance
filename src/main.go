@@ -15,9 +15,10 @@ import (
 func run(service roverlib.Service, configuration *roverlib.ServiceConfiguration) error {
 
 	//
-	// Acquire distance output stream
+	// Acquire distance output streams
 	//
-	distanceStream := service.GetWriteStream("distance")
+	distanceStreamOne := service.GetWriteStream("distance-one")
+	distanceStreamTwo := service.GetWriteStream("distance-two")
 
 	//
 	// Read multiplex configuration value
@@ -30,9 +31,15 @@ func run(service roverlib.Service, configuration *roverlib.ServiceConfiguration)
 	//
 	// We are only interested in the channel if we use a multiplexer
 	//
-	channel := 0.0
+	channelOne := 0.0
+	channelTwo := 0.0
 	if multiplex > 0.5 {
-		channel, err = configuration.GetFloatSafe("channel")
+		channelOne, err = configuration.GetFloatSafe("channel-one")
+		if err != nil {
+			return fmt.Errorf("Failed to get configuration: %v", err)
+		}
+
+		channelTwo, err = configuration.GetFloatSafe("channel-two")
 		if err != nil {
 			return fmt.Errorf("Failed to get configuration: %v", err)
 		}
@@ -57,37 +64,55 @@ func run(service roverlib.Service, configuration *roverlib.ServiceConfiguration)
 	//
 	// Initialize our Time Of Flight sensor
 	//
-	sensor, err := Initialize(multiplex > 0.5, uint(math.Round(bus)), uint8(math.Round(channel)))
+	sensor, err := Initialize(multiplex > 0.5, uint(math.Round(bus)), [2]uint8{uint8(math.Round(channelOne)), uint8(math.Round(channelTwo))})
 	if err != nil {
 		log.Error().Msgf(err.Error())
 		return fmt.Errorf("Failed to initialize Time Of Flight sensor")
 	}
 
 	for{
-		distance, err := sensor.ReadDistance()
+		distanceOne, err := sensor.ReadDistance(0)
 		if err != nil {
 			log.Error().Msgf("Error reading...")
 			continue
 		} 
-
-		err = distanceStream.Write(
+		distanceTwo, err := sensor.ReadDistance(1)
+		if err != nil {
+			log.Error().Msgf("Error reading...")
+			continue
+		} 
+		errOne := distanceStreamOne.Write(
 			&pb_outputs.SensorOutput{
 				SensorId:  2,
 				Status:    0,
 				Timestamp: uint64(time.Now().UnixMilli()),
 				SensorOutput: &pb_outputs.SensorOutput_DistanceOutput{
 					DistanceOutput: &pb_outputs.DistanceSensorOutput{
-						Distance: float32(distance) / 1000.0,
+						Distance: float32(distanceOne) / 1000.0,
 					},
 				},
 			},
 		)
-		if err != nil {
+		errTwo := distanceStreamTwo.Write(
+			&pb_outputs.SensorOutput{
+				SensorId:  2,
+				Status:    0,
+				Timestamp: uint64(time.Now().UnixMilli()),
+				SensorOutput: &pb_outputs.SensorOutput_DistanceOutput{
+					DistanceOutput: &pb_outputs.DistanceSensorOutput{
+						Distance: float32(distanceTwo) / 1000.0,
+					},
+				},
+			},
+		)
+		if errOne != nil || errTwo != nil {
 			log.Err(err).Msg("Failed to send distance output")
 			continue
 		}
 
-		log.Info().Msgf("distance: %f m", float32(distance) / 1000.0)
+		log.Info().Msgf("distance sensor one: %f m", float32(distanceOne) / 1000.0)
+		log.Info().Msgf("distance sensor two: %f m", float32(distanceTwo) / 1000.0)
+
 		frameRate, err = configuration.GetFloat("frame-rate")
 		if err != nil {
 			return fmt.Errorf("Failed to get configuration: %v", err)
