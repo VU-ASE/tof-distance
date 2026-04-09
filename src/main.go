@@ -60,7 +60,7 @@ func run(service roverlib.Service, configuration *roverlib.ServiceConfiguration)
 			log.Error().Msgf("Error reading...%v", err)
 			continue
 		} 
-		time.Sleep(time.Millisecond * 5)
+
 		// distanceTwo, err := sensor.ReadDistance(1)
 		// if err != nil {
 		// 	log.Error().Msgf("Error reading sensor...%v", err)
