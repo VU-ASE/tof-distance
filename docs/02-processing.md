@@ -34,5 +34,5 @@ This service follows the following steps:
 ## About the VL6180X Sensor
 
 The VL6180X is a Time-of-Flight (ToF) distance sensor. Unlike simple infrared proximity sensors, it estimates distance by measuring the time it takes for emitted light to reflect off an object and return to the sensor. This makes it more suitable for short-range distance measurements where a direct metric reading is needed.
-
+ 
 In this service, the sensor is used to produce real-time distance measurements that can be consumed by other Rover services for obstacle awareness, navigation logic, or higher-level decision making.
