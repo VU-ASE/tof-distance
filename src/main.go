@@ -98,6 +98,9 @@ func run(service roverlib.Service, configuration *roverlib.ServiceConfiguration)
 		log.Info().Msgf("distance sensor one: %f m", float32(distanceOne) / 1000.0)
 		//log.Info().Msgf("distance sensor two: %f m", float32(distanceTwo) / 1000.0)
 
+
+		time.Sleep(time.Second / time.Duration(frameRate))
+		
 		frameRate, err = configuration.GetFloat("frame-rate")
 		if err != nil {
 			return fmt.Errorf("Failed to get configuration: %v", err)
@@ -105,9 +108,6 @@ func run(service roverlib.Service, configuration *roverlib.ServiceConfiguration)
 		if frameRate == 0 {
 			return fmt.Errorf("Frame rate can't be 0 (division by zero)")
 		}
-
-		time.Sleep(time.Second / time.Duration(frameRate))
-		
 	}
 	
 }
