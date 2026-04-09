@@ -28,12 +28,6 @@ func run(service roverlib.Service, configuration *roverlib.ServiceConfiguration)
 	// if err != nil {
 	// 	return fmt.Errorf("Failed to get configuration: %v", err)
 	// }
-	
-	
-	channel2, err := configuration.GetFloatSafe("second-channel")
-	if err != nil {
-		return fmt.Errorf("Failed to get configuration: %v", err)
-	}
 
 	//
 	// Read bus configuration value
