@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.0 (2026-04-22)
+
+
+### Features
+
+* added documentation for the service ([b3de5cf](https://github.com/VU-ASE/tof-distance/commit/b3de5cf99ea4766ab6700b8035437897293e5249))
+* added functionality for two sensors ([228cbe2](https://github.com/VU-ASE/tof-distance/commit/228cbe26816b81ed213213f8dff6f23de1d75adf))
+* functionality for 2 tof sensors ([e33b8b0](https://github.com/VU-ASE/tof-distance/commit/e33b8b0aca180087b47debff8531a75e0f500300))
+* tof support for multiplex ([18664b4](https://github.com/VU-ASE/tof-distance/commit/18664b40e34c0f6aaee6ddbb2e466011b311ddb9))
+
 ## [2.0.0](https://github.com/VU-ASE/service-template-go/compare/v1.1.0...v2.0.0) (2025-07-31)
 
 
